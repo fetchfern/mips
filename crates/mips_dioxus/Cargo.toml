@@ -1,0 +1,11 @@
+[package]
+name = "mips_dioxus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = "0.4.3"
+dioxus-desktop = "0.4.3"
+
+[lints.rust]
+non_snake_case = "allow"
