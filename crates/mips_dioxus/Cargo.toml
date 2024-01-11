@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 dioxus = "0.4.3"
 dioxus-desktop = "0.4.3"
+mips_cpu = {version = "0.1.0", path = "../mips_cpu/"}
 
 [lints.rust]
 non_snake_case = "allow"

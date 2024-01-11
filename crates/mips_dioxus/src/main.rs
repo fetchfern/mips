@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
+use mips_cpu::Cpu;
 
 fn main() {
   // launch the dioxus app in a webview
@@ -8,20 +9,17 @@ fn main() {
 
 // define a component that renders a div with the text "Hello, world!"
 fn App(cx: Scope) -> Element {
-  let mut count = use_state(cx, || 0);
+  let prog = 0b000000010000100101010100001u32.to_le_bytes();
+
+  let mut cpu = Cpu::new(&prog);
+
+  cpu.next();
 
   cx.render(rsx!(
-    h1 {
-      text_align: "center",
-      "High-Five counter: {count}"
-    },
-    button {
-      onclick: move |_| count += 1,
-      "Up high!"
-    },
-    button {
-      onclick: move |_| count -= 1,
-      "Down low!"
-    },
+    div {
+      for reg in cpu.reg.area {
+        h1 { "{reg:?}" }
+      }
+    }
   ))
 }

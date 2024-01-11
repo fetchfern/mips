@@ -1,19 +1,21 @@
-use std::cell::{UnsafeCell, Cell};
-use std::ops::{Deref, DerefMut};
+use std::{
+  cell::{Cell, UnsafeCell},
+  ops::{Deref, DerefMut},
+};
 
 const fn isolate_opcode(instr: u32) -> u32 {
   (instr >> 26) & ((1 << 6) - 1)
 }
 
 const fn isolate_funct(instr: u32) -> u32 {
-  instr & ((1 << 5) - 1)
+  instr & ((1 << 6) - 1)
 }
 
-const fn isolate_rs(instr: u32) -> u32 { 
+const fn isolate_rs(instr: u32) -> u32 {
   (instr >> 21) & ((1 << 5) - 1)
 }
 
-const fn isolate_rt(instr: u32) -> u32 { 
+const fn isolate_rt(instr: u32) -> u32 {
   (instr >> 16) & ((1 << 5) - 1)
 }
 
@@ -39,12 +41,12 @@ fn opcode_zero_hdl(instr: u32, reg: &RegisterMem) {
       let (value, _) = u8::overflowing_add(*rs, *rt);
 
       *rd = value;
-    },
+    }
     _ => todo!(),
   }
 }
 
-struct ReleaseGuard<'a> {
+pub struct ReleaseGuard<'a> {
   ptr: &'a mut u8,
   parent: &'a RegisterMem,
   idx: usize,
@@ -71,8 +73,8 @@ impl<'a> DerefMut for ReleaseGuard<'a> {
 }
 
 #[derive(Debug, Default)]
-struct RegisterMem {
-  area: [UnsafeCell<u8>; 32],
+pub struct RegisterMem {
+  pub area: [UnsafeCell<u8>; 32],
   mut_borrow_mask: [Cell<bool>; 32],
 }
 
@@ -95,10 +97,11 @@ impl RegisterMem {
 }
 
 /// MIPS bytecote interpreter which runs one program, then dies.
+#[derive(Debug)]
 pub struct Cpu<'a> {
   program: &'a [u8],
   ptr: usize,
-  reg: RegisterMem,
+  pub reg: RegisterMem,
 }
 
 impl Cpu<'_> {
