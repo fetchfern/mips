@@ -3,6 +3,9 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use std::fmt;
 
+// opcode | rs    | rt    | rd    | funct
+// 000000 | 01000 | 01001 | 01010 | 100001
+
 const fn isolate_opcode(instr: u32) -> u32 {
   (instr >> 26) & ((1 << 6) - 1)
 }
@@ -12,21 +15,23 @@ const fn isolate_funct(instr: u32) -> u32 {
 }
 
 const fn isolate_rs(instr: u32) -> u32 {
-  (instr >> 21) & ((1 << 5) - 1)
-}
-
-const fn isolate_rt(instr: u32) -> u32 {
   (instr >> 16) & ((1 << 5) - 1)
 }
 
-const fn isolate_rd(instr: u32) -> u32 {
+const fn isolate_rt(instr: u32) -> u32 {
   (instr >> 11) & ((1 << 5) - 1)
+}
+
+const fn isolate_rd(instr: u32) -> u32 {
+  (instr >> 6) & ((1 << 5) - 1)
 }
 
 fn register_triad(instr: u32, reg: &RegisterMem) -> (ReleaseGuard, ReleaseGuard, ReleaseGuard) {
   let rd = isolate_rd(instr);
   let rs = isolate_rs(instr);
   let rt = isolate_rt(instr);
+
+  println!("{rd}, {rs}, {rt}");
 
   (reg.r(rd as usize), reg.r(rs as usize), reg.r(rt as usize))
 }
@@ -106,8 +111,8 @@ pub struct Cpu<'a> {
 impl Cpu<'_> {
   pub fn new(program: &[u8]) -> Cpu<'_> {
     let registers = RegisterMem::default();
-    *registers.r(9) = 1;
-    *registers.r(10) = 2;
+    *registers.r(8) = 1;
+    *registers.r(9) = 2;
 
     Cpu {
       program,
