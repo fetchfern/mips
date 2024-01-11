@@ -17,9 +17,7 @@ fn App(cx: Scope) -> Element {
 
   cx.render(rsx!(
     div {
-      for reg in cpu.reg.area {
-        h1 { "{reg:?}" }
-      }
+      h1 { "{cpu:?}" }
     }
   ))
 }

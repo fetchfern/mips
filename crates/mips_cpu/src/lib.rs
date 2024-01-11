@@ -1,7 +1,7 @@
-use std::{
-  cell::{Cell, UnsafeCell},
-  ops::{Deref, DerefMut},
-};
+use std::cell::{Cell, UnsafeCell};
+use std::fmt::Debug;
+use std::ops::{Deref, DerefMut};
+use std::fmt;
 
 const fn isolate_opcode(instr: u32) -> u32 {
   (instr >> 26) & ((1 << 6) - 1)
@@ -46,7 +46,7 @@ fn opcode_zero_hdl(instr: u32, reg: &RegisterMem) {
   }
 }
 
-pub struct ReleaseGuard<'a> {
+struct ReleaseGuard<'a> {
   ptr: &'a mut u8,
   parent: &'a RegisterMem,
   idx: usize,
@@ -73,8 +73,8 @@ impl<'a> DerefMut for ReleaseGuard<'a> {
 }
 
 #[derive(Debug, Default)]
-pub struct RegisterMem {
-  pub area: [UnsafeCell<u8>; 32],
+struct RegisterMem {
+  area: [UnsafeCell<u8>; 32],
   mut_borrow_mask: [Cell<bool>; 32],
 }
 
@@ -97,24 +97,27 @@ impl RegisterMem {
 }
 
 /// MIPS bytecote interpreter which runs one program, then dies.
-#[derive(Debug)]
 pub struct Cpu<'a> {
   program: &'a [u8],
-  ptr: usize,
-  pub reg: RegisterMem,
+  pc: usize,
+  registers: RegisterMem,
 }
 
 impl Cpu<'_> {
   pub fn new(program: &[u8]) -> Cpu<'_> {
+    let registers = RegisterMem::default();
+    *registers.r(9) = 1;
+    *registers.r(10) = 2;
+
     Cpu {
       program,
-      ptr: 0,
-      reg: Default::default(),
+      pc: 0,
+      registers,
     }
   }
 
   pub fn next(&mut self) {
-    let bytes = &self.program[self.ptr..self.ptr + 4];
+    let bytes = &self.program[self.pc..self.pc + 4];
     let instr = u32::from_le_bytes(bytes.try_into().unwrap());
 
     // instruction flow: according to this documentation
@@ -123,8 +126,26 @@ impl Cpu<'_> {
     let opcode = isolate_opcode(instr);
 
     match opcode {
-      0 => opcode_zero_hdl(instr, &self.reg),
+      0 => opcode_zero_hdl(instr, &self.registers),
       _ => todo!(),
     }
   }
+}
+
+impl Debug for Cpu<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for value in self.registers.mut_borrow_mask.iter() {
+            if value.get() {
+                panic!("race condition: debug fmt while register borrowed");
+            }
+        }
+
+        writeln!(f, "PC: {}", self.pc)?;
+
+        for (i, value_cell) in self.registers.area.iter().enumerate() {
+            writeln!(f, "r{i}: {:#04x}", unsafe { *value_cell.get() })?
+        } 
+
+        write!(f, "")
+    }
 }
