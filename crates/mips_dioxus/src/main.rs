@@ -13,7 +13,7 @@ fn main() {
 
 // define a component that renders a div with the text "Hello, world!"
 fn App(cx: Scope) -> Element {
-  let prog = 0b000000010000100101010100001u32.to_le_bytes();
+  let prog = 0b0000_0001_0000_1001_0101_0000_0010_0001_u32.to_le_bytes();
 
   let mut cpu = Cpu::new(&prog);
 
@@ -26,7 +26,7 @@ fn App(cx: Scope) -> Element {
     div {
       for line in lines {
         p {
-          class: "text-xl text-red",
+          class: "text-xl",
           "{line}"
         }
       }

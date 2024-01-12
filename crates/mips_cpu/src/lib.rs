@@ -1,103 +1,87 @@
-use std::cell::{Cell, UnsafeCell};
-use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
-use std::fmt;
+use std::{
+  cell::{RefCell, RefMut},
+  fmt,
+  fmt::Debug,
+};
 
-// opcode | rs    | rt    | rd    | funct
-// 000000 | 01000 | 01001 | 01010 | 100001
+use k9::assert_lesser_than as assert_lt;
 
-const fn isolate_opcode(instr: u32) -> u32 {
-  (instr >> 26) & ((1 << 6) - 1)
+// addu t2, t0, t1
+// opcode | rs    | rt    | rd    | shamt | funct
+// 000000 | 01000 | 01001 | 01010 | 00000 | 100001
+
+/// Functions for isolating the bits of an instruction
+mod isolate {
+  pub(super) const fn opcode(instr: u32) -> u32 {
+    (instr >> 26) & ((1 << 6) - 1)
+  }
+
+  pub(super) const fn funct(instr: u32) -> u32 {
+    instr & ((1 << 6) - 1)
+  }
+
+  pub(super) const fn rs(instr: u32) -> u32 {
+    (instr >> 21) & ((1 << 5) - 1)
+  }
+
+  pub(super) const fn rt(instr: u32) -> u32 {
+    (instr >> 16) & ((1 << 5) - 1)
+  }
+
+  pub(super) const fn rd(instr: u32) -> u32 {
+    (instr >> 11) & ((1 << 5) - 1)
+  }
+
+  pub(super) const fn imm16(instr: u32) -> u16 {
+    (instr & ((1 << 16) - 1)) as u16
+  }
 }
 
-const fn isolate_funct(instr: u32) -> u32 {
-  instr & ((1 << 6) - 1)
-}
-
-const fn isolate_rs(instr: u32) -> u32 {
-  (instr >> 16) & ((1 << 5) - 1)
-}
-
-const fn isolate_rt(instr: u32) -> u32 {
-  (instr >> 11) & ((1 << 5) - 1)
-}
-
-const fn isolate_rd(instr: u32) -> u32 {
-  (instr >> 6) & ((1 << 5) - 1)
-}
-
-fn register_triad(instr: u32, reg: &RegisterMem) -> (ReleaseGuard, ReleaseGuard, ReleaseGuard) {
-  let rd = isolate_rd(instr);
-  let rs = isolate_rs(instr);
-  let rt = isolate_rt(instr);
-
-  println!("{rd}, {rs}, {rt}");
+/// Creates a tuple of references to rd, rs, and rt
+fn register_triad(instr: u32, reg: &RegisterMem) -> (RefMut<u8>, RefMut<u8>, RefMut<u8>) {
+  let rd = isolate::rd(instr);
+  let rs = isolate::rs(instr);
+  let rt = isolate::rt(instr);
 
   (reg.r(rd as usize), reg.r(rs as usize), reg.r(rt as usize))
 }
 
-fn opcode_zero_hdl(instr: u32, reg: &RegisterMem) {
-  let funct = isolate_funct(instr);
+/// Handles functs under opcode zero
+fn handle_opcode_zero(instr: u32, reg: &RegisterMem) {
+  let funct = isolate::funct(instr);
 
   match funct {
     0x21 => {
+      // addu
       let (mut rd, rs, rt) = register_triad(instr, reg);
 
       let (value, _) = u8::overflowing_add(*rs, *rt);
 
-      *rd = value;
+      *rd = value
     }
+
+    0x23 => {
+      // subu
+      let (mut rd, rs, rt) = register_triad(instr, reg);
+
+      let (value, _) = u8::overflowing_sub(*rs, *rt);
+
+      *rd = value
+    }
+
     _ => todo!(),
-  }
-}
-
-struct ReleaseGuard<'a> {
-  ptr: &'a mut u8,
-  parent: &'a RegisterMem,
-  idx: usize,
-}
-
-impl<'a> Drop for ReleaseGuard<'a> {
-  fn drop(&mut self) {
-    self.parent.mut_borrow_mask[self.idx].set(false);
-  }
-}
-
-impl<'a> Deref for ReleaseGuard<'a> {
-  type Target = u8;
-
-  fn deref(&self) -> &Self::Target {
-    &*self.ptr
-  }
-}
-
-impl<'a> DerefMut for ReleaseGuard<'a> {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    self.ptr
   }
 }
 
 #[derive(Debug, Default)]
 struct RegisterMem {
-  area: [UnsafeCell<u8>; 32],
-  mut_borrow_mask: [Cell<bool>; 32],
+  area: [RefCell<u8>; 32],
 }
 
 impl RegisterMem {
-  pub fn r(&self, n: usize) -> ReleaseGuard {
-    assert!(n <= 32, "register idx out of range");
-
-    if self.mut_borrow_mask[n].get() {
-      panic!("race condition on register {n}");
-    }
-
-    self.mut_borrow_mask[n].set(true);
-
-    ReleaseGuard {
-      ptr: unsafe { &mut *self.area[n].get() },
-      parent: self,
-      idx: n,
-    }
+  pub fn r(&self, n: usize) -> RefMut<u8> {
+    assert_lt!(n, 32, "internal VM fault: register idx out of range");
+    self.area[n].borrow_mut()
   }
 }
 
@@ -128,29 +112,23 @@ impl Cpu<'_> {
     // instruction flow: according to this documentation
     // https://www.math.unipd.it/~sperduti/ARCHITETTURE-1/mips32.pdf
 
-    let opcode = isolate_opcode(instr);
+    let opcode = isolate::opcode(instr);
 
     match opcode {
-      0 => opcode_zero_hdl(instr, &self.registers),
+      0 => handle_opcode_zero(instr, &self.registers),
       _ => todo!(),
     }
   }
 }
 
 impl Debug for Cpu<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for value in self.registers.mut_borrow_mask.iter() {
-            if value.get() {
-                panic!("race condition: debug fmt while register borrowed");
-            }
-        }
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    writeln!(f, "PC: {}", self.pc)?;
 
-        writeln!(f, "PC: {}", self.pc)?;
-
-        for (i, value_cell) in self.registers.area.iter().enumerate() {
-            writeln!(f, "r{i}: {:#04x}", unsafe { *value_cell.get() })?
-        } 
-
-        write!(f, "")
+    for (i, value_cell) in self.registers.area.iter().enumerate() {
+      writeln!(f, "r{i}: {:#04x}", *value_cell.borrow())?
     }
+
+    write!(f, "")
+  }
 }
