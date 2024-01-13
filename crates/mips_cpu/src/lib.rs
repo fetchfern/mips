@@ -1,10 +1,16 @@
-use std::{
-  cell::{RefCell, RefMut},
-  fmt,
-  fmt::Debug,
-};
-
 use k9::assert_lesser_than as assert_lt;
+use std::cell::{RefCell, RefMut};
+use std::fmt;
+
+struct Memory {
+  
+}
+
+impl Memory {
+  pub fn load_byte(&mut self, addr: u32) -> u8 {
+    u8::default()
+  }
+}
 
 // addu t2, t0, t1
 // opcode | rs    | rt    | rd    | shamt | funct
@@ -38,7 +44,7 @@ mod isolate {
 }
 
 /// Creates a tuple of references to rd, rs, and rt
-fn register_triad(instr: u32, reg: &RegisterMem) -> (RefMut<u8>, RefMut<u8>, RefMut<u8>) {
+fn register_triad(instr: u32, reg: &RegisterMem) -> (RefMut<u32>, RefMut<u32>, RefMut<u32>) {
   let rd = isolate::rd(instr);
   let rs = isolate::rs(instr);
   let rt = isolate::rt(instr);
@@ -55,7 +61,7 @@ fn handle_opcode_zero(instr: u32, reg: &RegisterMem) {
       // addu
       let (mut rd, rs, rt) = register_triad(instr, reg);
 
-      let (value, _) = u8::overflowing_add(*rs, *rt);
+      let (value, _) = u32::overflowing_add(*rs, *rt);
 
       *rd = value
     }
@@ -64,7 +70,7 @@ fn handle_opcode_zero(instr: u32, reg: &RegisterMem) {
       // subu
       let (mut rd, rs, rt) = register_triad(instr, reg);
 
-      let (value, _) = u8::overflowing_sub(*rs, *rt);
+      let (value, _) = u32::overflowing_sub(*rs, *rt);
 
       *rd = value
     }
@@ -75,11 +81,11 @@ fn handle_opcode_zero(instr: u32, reg: &RegisterMem) {
 
 #[derive(Debug, Default)]
 struct RegisterMem {
-  area: [RefCell<u8>; 32],
+  area: [RefCell<u32>; 32],
 }
 
 impl RegisterMem {
-  pub fn r(&self, n: usize) -> RefMut<u8> {
+  pub fn r(&self, n: usize) -> RefMut<u32> {
     assert_lt!(n, 32, "internal VM fault: register idx out of range");
     self.area[n].borrow_mut()
   }
@@ -121,7 +127,7 @@ impl Cpu<'_> {
   }
 }
 
-impl Debug for Cpu<'_> {
+impl fmt::Debug for Cpu<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     writeln!(f, "PC: {}", self.pc)?;
 
