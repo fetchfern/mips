@@ -3,12 +3,13 @@ use std::cell::{RefCell, RefMut};
 use std::fmt;
 
 struct Memory {
-  
+  pub text: Vec<u8>,
+  pub data: Vec<u8>,
 }
 
 impl Memory {
-  pub fn load_byte(&mut self, addr: u32) -> u8 {
-    u8::default()
+  pub fn load_word(&mut self, addr: u32) -> u32 {
+    
   }
 }
 
