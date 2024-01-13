@@ -15,7 +15,7 @@ fn main() {
 fn App(cx: Scope) -> Element {
   let prog = 0b0000_0001_0000_1001_0101_0000_0010_0001_u32.to_le_bytes();
 
-  let mut cpu = Cpu::new(&prog);
+  let mut cpu = Cpu::new(prog.to_vec());
 
   cpu.next();
 

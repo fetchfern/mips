@@ -45,7 +45,7 @@
               openssl
               pango
               webkitgtk_4_1
-              (rust-bin.stable.latest.default.override {
+              (rust-bin.nightly."2024-01-12".default.override {
                 targets = ["wasm32-unknown-unknown"];
               })
             ]
