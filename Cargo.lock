@@ -1630,6 +1630,7 @@ name = "mips_cpu"
 version = "0.1.0"
 dependencies = [
  "k9",
+ "mips_object",
 ]
 
 [[package]]
@@ -1639,7 +1640,12 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "mips_cpu",
+ "mips_object",
 ]
+
+[[package]]
+name = "mips_object"
+version = "0.1.0"
 
 [[package]]
 name = "mips_test"
