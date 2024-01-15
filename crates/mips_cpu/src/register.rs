@@ -1,6 +1,6 @@
-use crate::cycle::{Trigger, CycleResult};
+use crate::cycle::{CycleResult, Trigger};
 use crate::mem::TEXT_START;
-use std::cell::{RefCell, RefMut, BorrowError, Ref};
+use std::cell::{BorrowError, Ref, RefCell, RefMut};
 
 #[derive(Debug)]
 pub struct Registers {
@@ -26,7 +26,9 @@ impl Registers {
 
   pub fn r(&self, n: usize) -> CycleResult<RefMut<u32>> {
     if n >= 32 {
-      return Err(Trigger::VmError(format!("register index out of range (expected < 32, got {n})")));
+      return Err(Trigger::VmError(format!(
+        "register index out of range (expected < 32, got {n})"
+      )));
     }
 
     // prior check for n < 32
@@ -37,7 +39,8 @@ impl Registers {
   pub fn regular_values(&self) -> [Result<Ref<u32>, BorrowError>; 32] {
     // collected vector cannot not be length 32
     #[allow(clippy::unwrap_used)]
-    self.regular
+    self
+      .regular
       .iter()
       .map(RefCell::try_borrow)
       .collect::<Vec<_>>()

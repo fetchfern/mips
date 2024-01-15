@@ -1,8 +1,8 @@
 #![feature(bigint_helper_methods)]
 
+use cycle::Trigger;
 use std::fmt;
 use std::rc::Rc;
-use cycle::Trigger;
 
 /// MIPS bytecote interpreter which runs one program, then dies.
 pub struct Cpu {
@@ -30,7 +30,7 @@ impl Cpu {
     match result {
       Ok(()) => {
         self.registers.pc += 4;
-      },
+      }
 
       Err(tr) => match tr {
         Trigger::Branch(val) => {
@@ -48,7 +48,7 @@ impl Cpu {
         Trigger::VmError(reason) => {
           panic!("internal VM error ({reason})");
         }
-      }
+      },
     }
   }
 }
@@ -72,6 +72,6 @@ impl fmt::Debug for Cpu {
   }
 }
 
-pub mod mem;
 pub mod cycle;
+pub mod mem;
 pub mod register;

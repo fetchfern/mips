@@ -1,6 +1,6 @@
-use std::cell::RefMut;
+use crate::mem::{MemoryMap, TEXT_START};
 use crate::register::Registers;
-use crate::mem::{TEXT_START, MemoryMap};
+use std::cell::RefMut;
 
 fn isolate_opcode(instr: u32) -> u32 {
   (instr >> 26) & ((1 << 6) - 1)
@@ -82,105 +82,105 @@ pub enum Trigger {
 /// function does NOT write to the program counter, the caller is responsible
 /// for updating the PC depending on the cycle result.
 pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> CycleResult<()> {
-    let instr = memory.load_word(registers.pc)?;
+  let instr = memory.load_word(registers.pc)?;
 
-    // instruction flow: according to this documentation
-    // https://www.math.unipd.it/~sperduti/ARCHITETTURE-1/mips32.pdf
+  // instruction flow: according to this documentation
+  // https://www.math.unipd.it/~sperduti/ARCHITETTURE-1/mips32.pdf
 
-    let opcode = isolate_opcode(instr);
+  let opcode = isolate_opcode(instr);
 
-    match opcode {
-      0 => handle_zero_opcode(instr, memory, registers),
+  match opcode {
+    0 => handle_zero_opcode(instr, memory, registers),
 
-      0x8 => {
-        // addi rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
+    0x8 => {
+      // addi rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
 
-        let addend0 = *rs;
-        let addend1 = sign_extend(imm16);
-        let sum = addend0 + addend1;
+      let addend0 = *rs;
+      let addend1 = sign_extend(imm16);
+      let sum = addend0 + addend1;
 
-        if twos_complement_overflowed(addend0, addend1, sum) {
-          return Err(Trigger::Trap);
-        }
-
-        *rt = sum;
-
-        Ok(())
+      if twos_complement_overflowed(addend0, addend1, sum) {
+        return Err(Trigger::Trap);
       }
 
-      0x9 => {
-        // addiu rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
+      *rt = sum;
 
-        *rt = *rs + sign_extend(imm16);
-        Ok(())
-      }
-
-      0xa => {
-        // slti rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
-
-        *rt = (*rs - sign_extend(imm16)) >> 31;
-        Ok(())
-      }
-
-      0xb => {
-        // sltiu rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
-
-        *rt = (*rs < sign_extend(imm16)) as u32;
-        Ok(())
-      }
-
-      0xc => {
-        // andi rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
-
-        *rt = *rs & imm16 as u32;
-        Ok(())
-      }
-
-      0xd => {
-        // ori rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
-
-        *rt = *rs | imm16 as u32;
-        Ok(())
-      }
-
-      0xe => {
-        // xori rt, rs, imm16
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        let rs = registers.r(isolate_rs(instr) as usize)?;
-        let imm16 = isolate_imm16(instr);
-
-        *rt = *rs ^ imm16 as u32;
-        Ok(())
-      }
-
-      0xf => {
-        // lui rt, imm16
-        let hword = isolate_imm16(instr);
-        let mut rt = registers.r(isolate_rt(instr) as usize)?;
-        *rt = (hword as u32) << 16;
-        Ok(())
-      },
-
-      _ => unimplemented!(),
+      Ok(())
     }
+
+    0x9 => {
+      // addiu rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
+
+      *rt = *rs + sign_extend(imm16);
+      Ok(())
+    }
+
+    0xa => {
+      // slti rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
+
+      *rt = (*rs - sign_extend(imm16)) >> 31;
+      Ok(())
+    }
+
+    0xb => {
+      // sltiu rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
+
+      *rt = (*rs < sign_extend(imm16)) as u32;
+      Ok(())
+    }
+
+    0xc => {
+      // andi rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
+
+      *rt = *rs & imm16 as u32;
+      Ok(())
+    }
+
+    0xd => {
+      // ori rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
+
+      *rt = *rs | imm16 as u32;
+      Ok(())
+    }
+
+    0xe => {
+      // xori rt, rs, imm16
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      let rs = registers.r(isolate_rs(instr) as usize)?;
+      let imm16 = isolate_imm16(instr);
+
+      *rt = *rs ^ imm16 as u32;
+      Ok(())
+    }
+
+    0xf => {
+      // lui rt, imm16
+      let hword = isolate_imm16(instr);
+      let mut rt = registers.r(isolate_rt(instr) as usize)?;
+      *rt = (hword as u32) << 16;
+      Ok(())
+    }
+
+    _ => unimplemented!(),
+  }
 }
 
 fn handle_zero_opcode(
