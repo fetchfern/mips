@@ -1,6 +1,6 @@
 #![feature(bigint_helper_methods)]
 
-use cycle::Trigger;
+use cycle::Next;
 use std::fmt;
 use std::rc::Rc;
 
@@ -28,27 +28,21 @@ impl Cpu {
     let result = cycle::perform_cycle(&mut self.memory, &mut self.registers);
 
     match result {
-      Ok(()) => {
+      Next::Forward => {
         self.registers.pc += 4;
       }
 
-      Err(tr) => match tr {
-        Trigger::Branch(val) => {
-          self.registers.pc = val;
-        }
+      Next::Branch(value) => {
+        self.registers.pc = value;
+      }
 
-        Trigger::Trap => {
-          panic!("trap!");
-        }
+      Next::Exception(_excpt) => {
+        todo!("exception handling");
+      }
 
-        Trigger::Fault(f) => {
-          panic!("uh oh fault: {f:?}");
-        }
-
-        Trigger::VmError(reason) => {
-          panic!("internal VM error ({reason})");
-        }
-      },
+      Next::VmError(reason) => {
+        panic!("internal VM error: {reason}");
+      }
     }
   }
 }
@@ -75,3 +69,4 @@ impl fmt::Debug for Cpu {
 pub mod cycle;
 pub mod mem;
 pub mod register;
+pub mod exception;

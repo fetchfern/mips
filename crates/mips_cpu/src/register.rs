@@ -1,4 +1,4 @@
-use crate::cycle::{CycleResult, Trigger};
+use crate::exception::{Unstable, Exception};
 use crate::mem::TEXT_START;
 use std::cell::{BorrowError, Ref, RefCell, RefMut};
 
@@ -24,11 +24,9 @@ impl Registers {
     }
   }
 
-  pub fn r(&self, n: usize) -> CycleResult<RefMut<u32>> {
+  pub fn r(&self, n: usize) -> Result<RefMut<u32>, Unstable<Exception>> {
     if n >= 32 {
-      return Err(Trigger::VmError(format!(
-        "register index out of range (expected < 32, got {n})"
-      )));
+      return Err(Unstable::VmError("requesting register >= 32".to_owned()));
     }
 
     // prior check for n < 32

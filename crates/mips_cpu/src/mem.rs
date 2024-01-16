@@ -1,4 +1,4 @@
-use crate::cycle::{CycleResult, Fault, Trigger};
+use crate::exception::Exception;
 use std::rc::Rc;
 
 pub const TEXT_START: u32 = 0x00400000;
@@ -20,28 +20,22 @@ impl MemoryMap {
     MemoryMap { source_object }
   }
 
-  pub fn load_word(&mut self, addr: u32) -> CycleResult<u32> {
-    if addr % 4 != 0 {
-      return Err(Trigger::Fault(Fault::UnalignedAccess));
-    }
-
+  pub fn load_word(&mut self, addr: u32) -> Result<u32, Exception> {
     match addr {
       TEXT_START..=TEXT_END => {
         // .text (program instructions)
         let relative = (addr - TEXT_START) as usize;
 
-        println!("{:?}", self.source_object.text.raw_data);
-        println!("{relative}");
         if let Some(bytes) = self.source_object.text.raw_data.get(relative..relative + 4) {
           // prior .get(n..n+4) ensuring `bytes` being 4 bytes long
           #[allow(clippy::unwrap_used)]
           Ok(u32::from_le_bytes(bytes.try_into().unwrap()))
         } else {
-          Err(Trigger::Fault(Fault::UninitRead))
+          Err(Exception::AddrLoadFetch)
         }
       }
 
-      _ => Err(Trigger::VmError("UNIMPLEMENTED: mmap".to_owned())),
+      addr => todo!("mem fetch @ {addr:#10x}"),
     }
   }
 }
