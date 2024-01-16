@@ -1,4 +1,4 @@
-use crate::exception::{Unstable, Exception};
+use crate::exception::{Exception, Unstable};
 use crate::mem::TEXT_START;
 use std::cell::{BorrowError, Ref, RefCell, RefMut};
 

@@ -8,7 +8,7 @@ macro_rules! expect {
         return ::std::convert::Into::<$crate::cycle::Next>::into(v);
       }
     }
-  }
+  };
 }
 
 /// Specifies the resolution of a cycle.
@@ -33,5 +33,5 @@ impl From<Exception> for Next {
 
 pub use compute::perform_cycle;
 
-mod data;
 mod compute;
+mod data;

@@ -67,6 +67,6 @@ impl fmt::Debug for Cpu {
 }
 
 pub mod cycle;
+pub mod exception;
 pub mod mem;
 pub mod register;
-pub mod exception;

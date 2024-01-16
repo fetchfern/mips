@@ -28,7 +28,7 @@ pub enum Unstable<T> {
 
 impl<T> From<Unstable<T>> for cycle::Next
 where
-  T: Into<cycle::Next>
+  T: Into<cycle::Next>,
 {
   fn from(value: Unstable<T>) -> Self {
     match value {

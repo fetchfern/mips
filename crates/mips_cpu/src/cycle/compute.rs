@@ -1,8 +1,8 @@
-use std::cell::RefMut;
-use crate::register::Registers;
-use crate::mem::MemoryMap;
-use crate::exception::Exception;
 use crate::cycle::{data, Next};
+use crate::exception::Exception;
+use crate::mem::MemoryMap;
+use crate::register::Registers;
+use std::cell::RefMut;
 
 /// Parses instructions in format `i rd, rs, rt`
 fn parse_arithm_r(instr: u32, reg: &Registers) -> (RefMut<u32>, RefMut<u32>, RefMut<u32>) {
@@ -122,11 +122,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
   }
 }
 
-fn handle_zero_opcode(
-  instr: u32,
-  _memory: &mut MemoryMap,
-  registers: &mut Registers,
-) -> Next {
+fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Registers) -> Next {
   let funct = data::isolate_funct(instr);
 
   match funct {
