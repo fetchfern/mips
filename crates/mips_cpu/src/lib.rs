@@ -8,7 +8,7 @@ use std::rc::Rc;
 pub struct Cpu {
   memory: mem::MemoryMap,
   registers: register::Registers,
-  source_object: Rc<mips_object::Object>,
+  _source_object: Rc<mips_object::Object>,
 }
 
 impl Cpu {
@@ -18,7 +18,7 @@ impl Cpu {
 
     Cpu {
       memory: mem::MemoryMap::from_object(Rc::clone(&obj)),
-      source_object: obj,
+      _source_object: obj,
       registers,
     }
   }

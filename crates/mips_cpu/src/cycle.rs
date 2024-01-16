@@ -1,4 +1,4 @@
-use crate::mem::{MemoryMap, TEXT_START};
+use crate::mem::MemoryMap;
 use crate::register::Registers;
 use std::cell::RefMut;
 
@@ -185,7 +185,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Cycle
 
 fn handle_zero_opcode(
   instr: u32,
-  memory: &mut MemoryMap,
+  _memory: &mut MemoryMap,
   registers: &mut Registers,
 ) -> CycleResult<()> {
   let funct = isolate_funct(instr);
