@@ -26,6 +26,10 @@ pub fn isolate_imm16(instr: u32) -> u16 {
   (instr & ((1 << 16) - 1)) as u16
 }
 
+pub fn isolate_target_26(instr: u32) -> u32 {
+  instr & ((1 << 26) - 1)
+}
+
 pub fn twos_complement_overflowed(n1: u32, n2: u32, r: u32) -> bool {
   // last_bit(n1) SAME AS last_bit(n2) AND last_bit(n1) DIFFERENT last_bit(result)
   // (last_bit(n1) XOR last_bit(n2) == 0) AND (last_bit(n1) XOR last_bit(result) == 1)

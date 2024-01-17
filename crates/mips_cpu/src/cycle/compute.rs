@@ -43,6 +43,24 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
   match opcode {
     0 => handle_zero_opcode(instr, memory, registers),
 
+    0x2 => {
+      // j target
+      let target = data::isolate_target_26(instr);
+      Next::Branch(target)
+    }
+
+    0x3 => {
+      // jal target
+      let target = data::isolate_target_26(instr);
+
+      // unwrap is OK the value is a known constant
+      #[allow(clippy::unwrap_used)]
+      {
+        *registers.r(31).unwrap() = registers.pc + 4;
+      }
+      Next::Branch(target)
+    }
+
     0x8 => {
       // addi rt, rs, imm16
       let (mut rt, rs, imm16) = parse_arithm_i(instr, registers);
@@ -134,6 +152,14 @@ fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       *rd = *rt << shamt;
     }
 
+    0x3 => {
+      // sra rd, rt, shamt
+      let (mut rd, _, rt) = parse_arithm_r(instr, registers);
+      let shamt = data::isolate_shamt(instr);
+
+      *rd = (*rt >> shamt) | (*rt & (1 << 31))
+    }
+
     0x4 => {
       // sllv rd, rt, rs
       let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
@@ -141,12 +167,23 @@ fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       *rd = *rt << *rs;
     }
 
-    0x3 => {
-      // sra rd, rt, shamt
-      let (mut rd, _, rt) = parse_arithm_r(instr, registers);
-      let shamt = data::isolate_shamt(instr);
+    0x8 => {
+      // jr rs
+      #[allow(clippy::unwrap_used)]
+      let rs = registers.r(data::isolate_rs(instr) as usize).unwrap();
 
-      *rd = (*rt >> shamt) | (*rt & (1 << 31))
+      return Next::Branch(*rs);
+    }
+
+    0x9 => {
+      // jalr rs, rd
+      #[allow(clippy::unwrap_used)]
+      let rs = registers.r(data::isolate_rs(instr) as usize).unwrap();
+      #[allow(clippy::unwrap_used)]
+      let mut rd = registers.r(data::isolate_rd(instr) as usize).unwrap();
+
+      *rd = registers.pc + 4;
+      return Next::Branch(*rs);
     }
 
     0x19 => {
