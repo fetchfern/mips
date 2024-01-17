@@ -8,17 +8,17 @@ use std::rc::Rc;
 pub struct Cpu {
   memory: mem::MemoryMap,
   registers: register::Registers,
-  _source_object: Rc<mips_object::Object>,
+  _program: Rc<mips_program::ProgramData>,
 }
 
 impl Cpu {
   /// Prepare a runnable program instance, map data onto CPU memory
-  pub fn new(obj: Rc<mips_object::Object>) -> Cpu {
+  pub fn new(program: Rc<mips_program::ProgramData>) -> Cpu {
     let registers = register::Registers::init();
 
     Cpu {
-      memory: mem::MemoryMap::from_object(Rc::clone(&obj)),
-      _source_object: obj,
+      memory: mem::MemoryMap::from_program(Rc::clone(&program)),
+      _program: program,
       registers,
     }
   }

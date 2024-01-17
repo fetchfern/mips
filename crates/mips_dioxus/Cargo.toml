@@ -7,7 +7,7 @@ edition = "2021"
 dioxus = "0.4.3"
 dioxus-desktop = "0.4.3"
 mips_cpu = { version = "0.1.0", path = "../mips_cpu/" }
-mips_object = { version = "0.1.0", path = "../mips_object" }
+mips_program = { version = "0.1.0", path = "../mips_program" }
 
 [lints.rust]
 non_snake_case = "allow"

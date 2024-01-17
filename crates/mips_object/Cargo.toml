@@ -1,8 +1,0 @@
-[package]
-name = "mips_object"
-version = "0.1.0"
-description = "MIPS32 assembled object definition"
-edition = "2021"
-
-[dependencies]
-
