@@ -29,6 +29,17 @@ fn parse_arithm_i(instr: u32, reg: &Registers) -> (RefMut<u32>, RefMut<u32>, u16
   (rt, rs, imm16)
 }
 
+/// Parses instructions in format `i rs, rt`
+fn parse_trap_r(instr: u32, reg: &Registers) -> (RefMut<u32>, RefMut<u32>) {
+  // data::isolate_r* cannot return values higher or equal to 32
+  #[allow(clippy::unwrap_used)]
+  let rs = reg.r(data::isolate_rs(instr) as usize).unwrap();
+  #[allow(clippy::unwrap_used)]
+  let rt = reg.r(data::isolate_rt(instr) as usize).unwrap();
+
+  (rs, rt)
+}
+
 /// Perform the next cycle (as pointed by the current program counter). This
 /// function does NOT write to the program counter, the caller is responsible
 /// for updating the PC depending on the cycle result.
@@ -254,6 +265,52 @@ fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
       *rd = !(*rs | *rt);
     }
+ 
+    0x31 => {
+      // tgeu rs, rt
+      let (rs, rt) = parse_trap_r(instr, registers);
+
+      if *rs >= *rt {
+        return Next::Exception(Exception::Trap);
+      } else {
+        return Next::Forward;
+      }
+    }
+
+    0x33 => {
+      // tltu rs, rt
+      let (rs, rt) = parse_trap_r(instr, registers);
+
+      if *rs < *rt {
+        return Next::Exception(Exception::Trap);
+      } else {
+        return Next::Forward;
+      }
+    }
+
+    0x34 => {
+      // teq rs, rt
+      let (rs, rt) = parse_trap_r(instr, registers);
+
+      if *rs == *rt {
+        return Next::Exception(Exception::Trap);
+      } else {
+        return Next::Forward;
+      }
+    }
+
+    0x36 => {
+      // tneq rs, rt
+      let (rs, rt) = parse_trap_r(instr, registers);
+
+      if *rs != *rt {
+        return Next::Exception(Exception::Trap);
+      } else {
+        return Next::Forward;
+      }
+    }
+
+
 
     _ => todo!(),
   }
