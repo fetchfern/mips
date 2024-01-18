@@ -1,22 +1,11 @@
 use crate::exception::Exception;
 
-macro_rules! expect {
-  ($e:expr) => {
-    match ($e) {
-      ::std::result::Result::Ok(v) => v,
-      ::std::result::Result::Err(v) => {
-        return ::std::convert::Into::<$crate::cycle::Next>::into(v);
-      }
-    }
-  };
-}
-
 /// Specifies the resolution of a cycle.
 pub enum Next {
   /// Loaded instruction performed with no issues, the next instruction can
   /// safely be loaded.
   Forward,
-  /// Branch/Jump needs to be performed
+  /// Branch/Jump needs to be performed immediately
   Branch(u32),
   /// Issue an exception. Depending on the exception configuration on coproc0,
   /// branch execution to exception handler.
@@ -33,5 +22,7 @@ impl From<Exception> for Next {
 
 pub use compute::perform_cycle;
 
+/// Actual code performing each instruction.
 mod compute;
+/// Operations on instructions.
 mod data;

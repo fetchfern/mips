@@ -50,22 +50,27 @@ pub struct MemoryMap {
 }
 
 impl MemoryMap {
+  /// Create a `MemoryMap` instance from a shared pointer to `ProgramData`. More
+  /// parameters might be required in the future.
   pub fn from_program(program: Rc<ProgramData>) -> MemoryMap {
     MemoryMap { program }
   }
 
+  /// Load a word (`u32`).
   pub fn load_word(&mut self, addr: u32) -> Result<u32, Exception> {
     self
       .core_load(addr)
       .map(|(sub, io)| io.read_word((addr - sub) as usize).unwrap_or(0))
   }
 
+  /// Load a half word (`u16`).
   pub fn load_halfword(&mut self, addr: u32) -> Result<u16, Exception> {
     self
       .core_load(addr)
       .map(|(sub, io)| io.read_halfword((addr - sub) as usize).unwrap_or(0))
   }
 
+  /// Load a byte (`u8`).
   pub fn load_byte(&mut self, addr: u32) -> Result<u8, Exception> {
     self
       .core_load(addr)

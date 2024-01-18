@@ -1,8 +1,10 @@
 use crate::cycle;
 
+/// Exception types.  
+///
+/// Exceptions are unexpected changes in control flow.
 #[repr(u8)]
 #[derive(Debug)]
-/// An unexpected change in control flow.
 pub enum Exception {
   /// Address error caused by a load or an instruction fetch. Happens when reading
   /// uninitialized or unauthorized memory.
@@ -19,8 +21,8 @@ pub enum Exception {
   Trap = 0xc,
 }
 
-#[derive(Debug)]
 /// Error which can either be the of error type `T` or a VM internal error.
+#[derive(Debug)]
 pub enum Unstable<T> {
   Normal(T),
   VmError(String),

@@ -44,7 +44,10 @@ fn parse_trap_r(instr: u32, reg: &Registers) -> (RefMut<u32>, RefMut<u32>) {
 /// function does NOT write to the program counter, the caller is responsible
 /// for updating the PC depending on the cycle result.
 pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next {
-  let instr = expect!(memory.load_word(registers.pc));
+  let instr = match memory.load_word(registers.pc) {
+    Ok(v) => v,
+    Err(e) => return Next::Exception(e),
+  };
 
   // instruction flow: according to this documentation
   // https://www.math.unipd.it/~sperduti/ARCHITETTURE-1/mips32.pdf
