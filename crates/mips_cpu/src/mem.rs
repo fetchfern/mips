@@ -43,6 +43,8 @@ pub const KTEXT_END: u32 = KDATA_START - 1;
 /// The `.kdata` section contains kernel static data.
 pub const KDATA_START: u32 = 0x90000000;
 
+/// An interface used for mapping addresses in the MIPS memory layout
+/// to sections of memory.
 pub struct MemoryMap {
   program: Rc<ProgramData>,
 }
