@@ -25,11 +25,14 @@ impl Registers {
   }
 
   pub fn r(&self, n: usize) -> Result<RefMut<u32>, Unstable<Exception>> {
-    self.regular
+    self
+      .regular
       .get(n)
       .ok_or_else(|| Unstable::VmError("requested register out of range".to_owned()))
-      .and_then(|r| r.try_borrow_mut()
-           .map_err(|_| Unstable::VmError("race condition while borrowing register".to_owned())))
+      .and_then(|r| {
+        r.try_borrow_mut()
+          .map_err(|_| Unstable::VmError("race condition while borrowing register".to_owned()))
+      })
   }
 
   pub fn link(&self, n: usize) -> Result<(), Unstable<Exception>> {

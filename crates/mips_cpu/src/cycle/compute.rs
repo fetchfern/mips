@@ -318,7 +318,7 @@ fn handle_opcode_zero(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
 
       return Next::Branch(*rs);
     }
-    
+
     0xa => {
       // movz rd, rs, rt
       let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
@@ -376,6 +376,7 @@ fn handle_opcode_zero(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       registers.hi = hi;
       registers.lo = lo;
     }
+
     0x20 => {
       // add
       let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
@@ -435,7 +436,7 @@ fn handle_opcode_zero(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
       *rd = !(*rs | *rt);
     }
- 
+
     0x31 => {
       // tgeu rs, rt
       let (rs, rt) = parse_trap_r(instr, registers);
