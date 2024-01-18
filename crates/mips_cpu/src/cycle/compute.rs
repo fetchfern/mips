@@ -248,6 +248,54 @@ fn handle_opcode_zero(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
 
       return Next::Branch(*rs);
     }
+    
+    0xa => {
+      // movz rd, rs, rt
+      let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
+
+      if *rt == 0 {
+        *rd = *rs;
+      }
+    }
+
+    0xb => {
+      // movz rd, rs, rt
+      let (mut rd, rs, rt) = parse_arithm_r(instr, registers);
+
+      if *rt != 0 {
+        *rd = *rs;
+      }
+    }
+
+    0x10 => {
+      // mfhi rd
+      #[allow(clippy::unwrap_used)]
+      let mut rd = registers.r(data::isolate_rd(instr) as usize).unwrap();
+
+      *rd = registers.hi;
+    }
+
+    0x11 => {
+      // mthi rs
+      #[allow(clippy::unwrap_used)]
+      let rs_value = *registers.r(data::isolate_rs(instr) as usize).unwrap();
+      registers.hi = rs_value;
+    }
+
+    0x12 => {
+      // mflo rd
+      #[allow(clippy::unwrap_used)]
+      let mut rd = registers.r(data::isolate_rd(instr) as usize).unwrap();
+
+      *rd = registers.lo;
+    }
+
+    0x13 => {
+      // mtlo rs
+      #[allow(clippy::unwrap_used)]
+      let rs_value = *registers.r(data::isolate_rs(instr) as usize).unwrap();
+      registers.lo = rs_value;
+    }
 
     0x19 => {
       // multu
