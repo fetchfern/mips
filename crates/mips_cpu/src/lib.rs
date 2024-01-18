@@ -1,6 +1,6 @@
 #![feature(bigint_helper_methods)]
 
-use cycle::Trigger;
+use cycle::Next;
 use std::fmt;
 use std::rc::Rc;
 
@@ -8,17 +8,17 @@ use std::rc::Rc;
 pub struct Cpu {
   memory: mem::MemoryMap,
   registers: register::Registers,
-  source_object: Rc<mips_object::Object>,
+  _program: Rc<mips_program::ProgramData>,
 }
 
 impl Cpu {
   /// Prepare a runnable program instance, map data onto CPU memory
-  pub fn new(obj: Rc<mips_object::Object>) -> Cpu {
+  pub fn new(program: Rc<mips_program::ProgramData>) -> Cpu {
     let registers = register::Registers::init();
 
     Cpu {
-      memory: mem::MemoryMap::from_object(Rc::clone(&obj)),
-      source_object: obj,
+      memory: mem::MemoryMap::from_program(Rc::clone(&program)),
+      _program: program,
       registers,
     }
   }
@@ -28,27 +28,21 @@ impl Cpu {
     let result = cycle::perform_cycle(&mut self.memory, &mut self.registers);
 
     match result {
-      Ok(()) => {
+      Next::Forward => {
         self.registers.pc += 4;
       }
 
-      Err(tr) => match tr {
-        Trigger::Branch(val) => {
-          self.registers.pc = val;
-        }
+      Next::Branch(value) => {
+        self.registers.pc = value;
+      }
 
-        Trigger::Trap => {
-          panic!("trap!");
-        }
+      Next::Exception(_excpt) => {
+        todo!("exception handling");
+      }
 
-        Trigger::Fault(f) => {
-          panic!("uh oh fault: {f:?}");
-        }
-
-        Trigger::VmError(reason) => {
-          panic!("internal VM error ({reason})");
-        }
-      },
+      Next::VmError(reason) => {
+        panic!("internal VM error: {reason}");
+      }
     }
   }
 }
@@ -73,5 +67,6 @@ impl fmt::Debug for Cpu {
 }
 
 pub mod cycle;
+pub mod exception;
 pub mod mem;
 pub mod register;

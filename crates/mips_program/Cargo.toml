@@ -1,0 +1,9 @@
+[package]
+name = "mips_program"
+version = "0.1.0"
+description = "MIPS program data"
+edition = "2021"
+
+[dependencies]
+derive_more = "0.99.17"
+
