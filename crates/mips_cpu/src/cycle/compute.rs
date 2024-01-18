@@ -52,7 +52,8 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
   let opcode = data::isolate_opcode(instr);
 
   match opcode {
-    0 => handle_zero_opcode(instr, memory, registers),
+    0x0 => handle_opcode_zero(instr, memory, registers),
+    0x1 => handle_opcode_one(instr, memory, registers),
 
     0x2 => {
       // j target
@@ -66,10 +67,61 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
 
       // unwrap is OK the value is a known constant
       #[allow(clippy::unwrap_used)]
-      {
-        *registers.r(31).unwrap() = registers.pc + 4;
-      }
+      registers.link(31).unwrap();
+
       Next::Branch(target)
+    }
+
+    0x4 => {
+      // beq rs, rt, offset
+      let (rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(registers.pc, offset);
+
+      if *rt == *rs {
+        Next::Branch(addr)
+      } else {
+        Next::Forward
+      }
+    }
+
+    0x5 => {
+      // bne rs, rt, offset
+      let (rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(registers.pc, offset);
+
+      if *rt != *rs {
+        Next::Branch(addr)
+      } else {
+        Next::Forward
+      }
+    }
+
+    0x6 => {
+      // blez rs, offset
+
+      let (_, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(registers.pc, offset);
+
+      // lez signed comparison
+      if *rs == 0 || *rs >= (1 << 31) {
+        Next::Branch(addr)
+      } else {
+        Next::Forward
+      }
+    }
+
+    0x7 => {
+      // bgtz rs, offset
+
+      let (_, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(registers.pc, offset);
+
+      // gtz signed comparison
+      if (1..1 << 31).contains(&*rs) {
+        Next::Branch(addr)
+      } else {
+        Next::Forward
+      }
     }
 
     0x8 => {
@@ -151,7 +203,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
   }
 }
 
-fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Registers) -> Next {
+fn handle_opcode_zero(instr: u32, _memory: &mut MemoryMap, registers: &mut Registers) -> Next {
   let funct = data::isolate_funct(instr);
 
   match funct {
@@ -190,10 +242,10 @@ fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       // jalr rs, rd
       #[allow(clippy::unwrap_used)]
       let rs = registers.r(data::isolate_rs(instr) as usize).unwrap();
-      #[allow(clippy::unwrap_used)]
-      let mut rd = registers.r(data::isolate_rd(instr) as usize).unwrap();
 
-      *rd = registers.pc + 4;
+      #[allow(clippy::unwrap_used)]
+      registers.link(data::isolate_rd(instr) as usize).unwrap();
+
       return Next::Branch(*rs);
     }
 
@@ -310,10 +362,65 @@ fn handle_zero_opcode(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
       }
     }
 
-
-
     _ => todo!(),
   }
 
   Next::Forward
+}
+fn handle_opcode_one(instr: u32, _memory: &mut MemoryMap, registers: &mut Registers) -> Next {
+  let (rt, rs, imm16) = parse_arithm_i(instr, registers);
+
+  match *rt {
+    0x0 => {
+      // bltz rs, offset
+
+      // signed  ltz comparison
+      if *rs >= (1 << 31) {
+        Next::Branch(data::add_ihalf_to_uword(registers.pc, imm16))
+      } else {
+        Next::Forward
+      }
+    }
+
+    0x1 => {
+      // bgez rs, offset
+
+      // signed comparison
+      if *rs < (1 << 31) {
+        Next::Branch(data::add_ihalf_to_uword(registers.pc, imm16))
+      } else {
+        Next::Forward
+      }
+    }
+
+    0x10 => {
+      // bltzal rs, offset
+
+      // signed  ltz comparison
+      if *rs >= (1 << 31) {
+        #[allow(clippy::unwrap_used)]
+        registers.link(31).unwrap();
+
+        Next::Branch(data::add_ihalf_to_uword(registers.pc, imm16))
+      } else {
+        Next::Forward
+      }
+    }
+
+    0x11 => {
+      // bgezal rs, offset
+
+      // signed comparison
+      if *rs < (1 << 31) {
+        #[allow(clippy::unwrap_used)]
+        registers.link(31).unwrap();
+
+        Next::Branch(data::add_ihalf_to_uword(registers.pc, imm16))
+      } else {
+        Next::Forward
+      }
+    }
+
+    _ => unimplemented!(),
+  }
 }

@@ -41,3 +41,11 @@ pub fn sign_extend(n: u16) -> u32 {
   let ext = 0xffffu32 * (n >> 15);
   n | ext << 16
 }
+
+pub fn add_ihalf_to_uword(word: u32, half: u16) -> u32 {
+  if half > (u16::MAX >> 1) {
+    word - (!(half as u32) + 1)
+  } else {
+    word - half as u32
+  }
+}
