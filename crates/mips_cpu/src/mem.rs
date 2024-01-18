@@ -1,5 +1,6 @@
 use crate::exception::Exception;
 use mips_program::{Context, ProgramData, Section};
+use mips_program::interface::IoInterface;
 use std::rc::Rc;
 
 /// Start of `.text`.
@@ -52,31 +53,42 @@ impl MemoryMap {
   }
 
   pub fn load_word(&mut self, addr: u32) -> Result<u32, Exception> {
-    let data_maybe = match addr {
-      TEXT_START..=TEXT_END => {
-        // .text (program instructions)
+    self.core_load(addr)
+      .map(|(sub, io)| io.read_word((addr - sub) as usize).unwrap_or(0))
+  }
+
+  pub fn load_halfword(&mut self, addr: u32) -> Result<u16, Exception> {
+    self.core_load(addr)
+      .map(|(sub, io)| io.read_halfword((addr - sub) as usize).unwrap_or(0))
+  }
+
+  pub fn load_byte(&mut self, addr: u32) -> Result<u8, Exception> {
+    self.core_load(addr)
+      .map(|(sub, io)| io.read_byte((addr - sub) as usize).unwrap_or(0))
+  }
+
+  fn core_load(&mut self, addr: u32) -> Result<(u32, IoInterface), Exception> {
+    match addr {
+      TEXT_START..=TEXT_END =>
         self
           .program
           .read(Section::Text, Context::User)
-          .ok_or(Exception::AddrLoadFetch)?
-          .read_word((addr - TEXT_START) as usize)
-      }
+          .ok_or(Exception::AddrLoadFetch)
+          .map(|e| (TEXT_START, e)),
 
       EXTERN_START..=EXTERN_END => self
         .program
         .read(Section::Extern, Context::User)
-        .ok_or(Exception::AddrLoadFetch)?
-        .read_word((addr - EXTERN_START) as usize),
+        .ok_or(Exception::AddrLoadFetch)
+        .map(|e| (EXTERN_START, e)),
 
       DATA_START..=DATA_END => self
         .program
         .read(Section::Data, Context::User)
-        .ok_or(Exception::AddrLoadFetch)?
-        .read_word((addr - DATA_START) as usize),
+        .ok_or(Exception::AddrLoadFetch)
+        .map(|e| (DATA_START, e)),
 
       addr => todo!("mem fetch @ {addr:#10x}"),
-    };
-
-    data_maybe.ok_or(Exception::AddrLoadFetch)
+    }
   }
 }

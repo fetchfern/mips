@@ -129,7 +129,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
       let (mut rt, rs, imm16) = parse_arithm_i(instr, registers);
 
       let addend0 = *rs;
-      let addend1 = data::sign_extend(imm16);
+      let addend1 = data::sign_extend(16, imm16 as u32);
       let sum = addend0 + addend1;
 
       if data::twos_complement_overflowed(addend0, addend1, sum) {
@@ -145,7 +145,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
       // addiu rt, rs, imm16
       let (mut rt, rs, imm16) = parse_arithm_i(instr, registers);
 
-      *rt = *rs + data::sign_extend(imm16);
+      *rt = *rs + data::sign_extend(16, imm16 as u32);
       Next::Forward
     }
 
@@ -153,7 +153,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
       // slti rt, rs, imm16
       let (mut rt, rs, imm16) = parse_arithm_i(instr, registers);
 
-      *rt = (*rs - data::sign_extend(imm16)) >> 31;
+      *rt = (*rs - data::sign_extend(16, imm16 as u32)) >> 31;
       Next::Forward
     }
 
@@ -161,7 +161,7 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
       // sltiu rt, rs, imm16
       let (mut rt, rs, imm16) = parse_arithm_i(instr, registers);
 
-      *rt = (*rs < data::sign_extend(imm16)) as u32;
+      *rt = (*rs < data::sign_extend(16, imm16 as u32)) as u32;
       Next::Forward
     }
 
@@ -197,6 +197,76 @@ pub fn perform_cycle(memory: &mut MemoryMap, registers: &mut Registers) -> Next 
       let mut rt = registers.r(data::isolate_rt(instr) as usize).unwrap();
       *rt = (hword as u32) << 16;
       Next::Forward
+    }
+
+    0x20 => {
+      // lb rt, offset(rs)
+      let (mut rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(*rs, offset);
+
+      match memory.load_byte(addr) {
+        Ok(b) => {
+          *rt = data::sign_extend(8, b as u32);
+          Next::Forward
+        }
+        Err(e) => Next::Exception(e),
+      }
+    }
+
+    0x21 => {
+      // lh rt, offset(rs)
+      let (mut rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(*rs, offset);
+
+      match memory.load_halfword(addr) {
+        Ok(h) => {
+          *rt = data::sign_extend(16, h as u32);
+          Next::Forward
+        }
+        Err(e) => Next::Exception(e),
+      }
+    }
+
+    0x23 => {
+      // lw rt, offset(rs)
+      let (mut rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(*rs, offset);
+
+      match memory.load_word(addr) {
+        Ok(w) => {
+          *rt = w;
+          Next::Forward
+        }
+        Err(e) => Next::Exception(e),
+      }
+    }
+
+    0x24 => {
+      // lbu rt, offset(rs)
+      let (mut rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(*rs, offset);
+
+      match memory.load_byte(addr) {
+        Ok(b) => {
+          *rt = b as u32;
+          Next::Forward
+        }
+        Err(e) => Next::Exception(e),
+      }
+    }
+
+    0x25 => {
+      // lhu rt, offset(rs)
+      let (mut rt, rs, offset) = parse_arithm_i(instr, registers);
+      let addr = data::add_ihalf_to_uword(*rs, offset);
+
+      match memory.load_halfword(addr) {
+        Ok(h) => {
+          *rt = h as u32;
+          Next::Forward
+        }
+        Err(e) => Next::Exception(e),
+      }
     }
 
     _ => unimplemented!(),
@@ -415,6 +485,7 @@ fn handle_opcode_zero(instr: u32, _memory: &mut MemoryMap, registers: &mut Regis
 
   Next::Forward
 }
+
 fn handle_opcode_one(instr: u32, _memory: &mut MemoryMap, registers: &mut Registers) -> Next {
   let (rt, rs, imm16) = parse_arithm_i(instr, registers);
 

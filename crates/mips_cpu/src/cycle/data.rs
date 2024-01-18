@@ -36,10 +36,9 @@ pub fn twos_complement_overflowed(n1: u32, n2: u32, r: u32) -> bool {
   (n1 ^ n2) < 0x80000000 && (n1 ^ r) > 0x7fffffff
 }
 
-pub fn sign_extend(n: u16) -> u32 {
-  let n = n as u32;
-  let ext = 0xffffu32 * (n >> 15);
-  n | ext << 16
+pub fn sign_extend(base: usize, buf: u32) -> u32 {
+  let ext = 0xffffu32 * (buf >> (base - 1));
+  buf | ext << base
 }
 
 pub fn add_ihalf_to_uword(word: u32, half: u16) -> u32 {
