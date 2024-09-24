@@ -1,8 +1,9 @@
 # mips
 
-**wip warning**
+> [!WARNING]  
+> This software is a work in progress
 
-Next-generation general purpose MIPS R2000 CPU simulator, assembler, debugger and integrated editor, written in Rust.
+MIPS R2000 CPU simulator, written in Rust.
 
 ### Related
 
